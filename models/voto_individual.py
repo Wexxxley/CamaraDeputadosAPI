@@ -12,7 +12,7 @@ class VotoIndividual(SQLModel, table=True):
     
     tipo_voto: str = Field(max_length=20, description="Sim, Não, Abstenção, Obstrução, Ausente")
     data_hora_registro: Optional[datetime] = Field(default=None)
-    sigla_partido_deputado: Optional[str] = Field(default=None, max_length=10)
+    sigla_partido_deputado: Optional[str] = Field(default=None, max_length=50)
     uri_deputado: Optional[str] = Field(default=None, max_length=500)
 
     votacao: "SessaoVotacao" = Relationship(back_populates="votos")

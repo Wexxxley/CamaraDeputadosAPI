@@ -4,7 +4,7 @@ from sqlmodel import Field, SQLModel, Relationship
 class Partido(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     id_dados_abertos: int = Field(index=True, unique=True, description="ID do partido nos Dados Abertos da Câmara.")
-    sigla: str = Field(max_length=10, unique=True, description="Sigla do partido político.")
+    sigla: str = Field(max_length=50, unique=True, description="Sigla do partido político.")
     nome_completo: str = Field(max_length=255, description="Nome completo do partido político.")
 
     uri_logo: Optional[str] = Field(default=None, max_length=500)

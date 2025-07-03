@@ -10,7 +10,7 @@ class Deputado(SQLModel, table=True):
     id_dados_abertos: int = Field(index=True, unique=True, description="ID do deputado nos Dados Abertos da Câmara.")
     nome_civil: Optional[str] = Field(default=None, max_length=255)
     nome_eleitoral: str = Field(max_length=255, description="Nome pelo qual o deputado é conhecido eleitoralmente.")
-    sigla_partido: str = Field(max_length=10, description="Sigla do partido político do deputado.")
+    sigla_partido: str = Field(max_length=50, description="Sigla do partido político do deputado.")
     sigla_uf: str = Field(max_length=2, description="Sigla da Unidade Federativa (estado) do deputado.")
 
     id_partido: Optional[int] = Field(default=None,  foreign_key="partido.id")

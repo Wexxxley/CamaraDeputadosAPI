@@ -14,4 +14,6 @@ class Proposicao(SQLModel, table=True):
     url_inteiro_teor: Optional[str] = Field(default=None, max_length=500)
 
     # Relações: uma proposição pode estar em várias votações (associativa)
+    votos_individuais: List["VotoIndividual"] = Relationship(back_populates="proposicao")
+
     votacoes_proposicao: List["VotacaoProposicao"] = Relationship(back_populates="proposicao")
