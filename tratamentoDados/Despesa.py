@@ -30,63 +30,55 @@ def salvando_despesas_localmente_json():
             print(f"Erro ao buscar despesas para deputado {deputado.nome}: {response.status_code}")
             dados = []
         despesas_completos.append({
-            "id_deputado": deputado.id_dados_abertos,
+            "id_deputado": deputado.id,
             "nome_deputado": deputado.nome_eleitoral,
             "despesas": dados
         })
 
     # Salvar todas as despesas em um arquivo JSON
-    with open("despesas_deputados_2024.json", "w", encoding="utf-8") as f:
+    with open("data/despesas_deputados_2024.json", "w", encoding="utf-8") as f:
         json.dump(despesas_completos, f, ensure_ascii=False, indent=2)
 
 def carregar_despesas_json(caminho_arquivo: str) -> List[Dict]:
     with open(caminho_arquivo, 'r', encoding='utf-8') as f:
         dados = json.load(f)
+    return dados
 
 def main():
     arquivo_json = 'data/despesas_deputados_2024.json'
     despesas_base = carregar_despesas_json(arquivo_json)
     
-    despesas_completos = []
+    despesas_completas = []
 
-    for despesa in despesas_base:        
-        print("Processando despesa do deputado:", despesa.get('nome_deputado'))
+    for despesas_json in despesas_base:        
+        print("Processando despesa do deputado:", despesas_json.get('nome_deputado'))
         
-        print(despesa)
-    #     despesa_combinado = Despesa(
-    #         id_dados_abertos=,
-    #         sigla=despesa.get("sigla"),
-    #         nome_completo=despesa.get("nome"),
-    #         uri_logo=detalhes_json.get('uri_logo'),
-    #         id_legislativo=detalhes_json.get('id_legislativo'),
-    #         situacao=detalhes_json.get('situacao'),
-    #         total_membros=detalhes_json.get('total_membros'),
-    #         total_posse_legislatura=detalhes_json.get('total_posse_legislatura'),
-    #     )
-    #     despesas_completos.append(despesa_combinado)
+        despesas = despesas_json.get('despesas')
 
-    # with Session(engine) as session:
-    #     for despesa in despesas_completos:
-    #         session.add(despesa)
+        for despesa in despesas:
+
+            print(despesa,  "\n\n")
+            # Cria uma instância de Despesa para cada item
+            despesa_combinado = Despesa(
+                id_deputado=despesas_json.get('id_deputado'),
+                ano=despesa.get('ano'),
+                mes=despesa.get('mes'),
+                tipo_despesa=despesa.get('tipoDespesa'),
+                valor_liquido=despesa.get('valorLiquido'),
+                tipo_documento=despesa.get('tipoDocumento'),
+                url_documento=despesa.get('urlDocumento'),
+                nome_fornecedor=despesa.get('nomeFornecedor')
+            )
+    
+            despesas_completas.append(despesa_combinado)
+
+    with Session(engine) as session:
+        for despesa in despesas_completas:
+            session.add(despesa)
         
-    #     session.commit()
+        session.commit()
 
-#  id_dados_abertos: Optional[int] = Field(default=None, index=True, unique=True, description="ID da despesa nos Dados Abertos (se disponível).")
-
-#     id_deputado: int = Field(foreign_key="deputado.id", index=True, description="ID do deputado a quem a despesa pertence.")
-#     ano: int = Field(description="Ano da despesa.")
-#     mes: int = Field(description="Mês da despesa.")
-#     tipo_despesa: str = Field(max_length=300, description="Tipo da despesa (ex: 'Passagens Aéreas', 'Combustíveis').")
-#     valor_liquido: float = Field(description="Valor líquido da despesa.")
-
-#     tipo_documento: Optional[str] = Field(default=None, max_length=100)
-#     url_documento: Optional[str] = Field(default=None, max_length=500)
-#     nome_fornecedor: Optional[str] = Field(default=None, max_length=255)
-
-#     deputado: "Deputado" = Relationship(back_populates="despesas")
-
-salvando_despesas_localmente_json()
-
+main()
 # [
 #   {
 #     "id_deputado": 220593,
@@ -112,3 +104,59 @@ salvando_despesas_localmente_json()
 #         "parcela": 0
 #       },
 #       {
+#         "ano": 2024,
+#         "mes": 2,
+#         "tipoDespesa": "MANUTENÇÃO DE ESCRITÓRIO DE APOIO À ATIVIDADE PARLAMENTAR",
+#         "codDocumento": 7698890,
+#         "tipoDocumento": "Recibos/Outros",
+#         "codTipoDocumento": 1,
+#         "dataDocumento": "2024-02-02T00:00:00",
+#         "numDocumento": "11533022024001",
+#         "valorDocumento": 67.3,
+#         "urlDocumento": "https://www.camara.leg.br/cota-parlamentar/documentos/publ/3687/2024/7698890.pdf",
+#         "nomeFornecedor": "AGUAS CUIABA S.A",
+#         "cnpjCpfFornecedor": "14995581000153",
+#         "valorLiquido": 67.3,
+#         "valorGlosa": 0.0,
+#         "numRessarcimento": "",
+#         "codLote": 2019609,
+#         "parcela": 0
+#       },
+#       {
+#         "ano": 2024,
+#         "mes": 5,
+#         "tipoDespesa": "MANUTENÇÃO DE ESCRITÓRIO DE APOIO À ATIVIDADE PARLAMENTAR",
+#         "codDocumento": 7749701,
+#         "tipoDocumento": "Recibos/Outros",
+#         "codTipoDocumento": 1,
+#         "dataDocumento": "2024-05-11T00:00:00",
+#         "numDocumento": "01",
+#         "valorDocumento": 224.85,
+#         "urlDocumento": "https://www.camara.leg.br/cota-parlamentar/documentos/publ/3687/2024/7749701.pdf",
+#         "nomeFornecedor": "BRASIL ADM E SERVIÇOS DE COBRANÇA",
+#         "cnpjCpfFornecedor": "33488393000183",
+#         "valorLiquido": 224.85,
+#         "valorGlosa": 0.0,
+#         "numRessarcimento": "",
+#         "codLote": 2047008,
+#         "parcela": 0
+#       },
+#       {
+#         "ano": 2024,
+#         "mes": 5,
+#         "tipoDespesa": "MANUTENÇÃO DE ESCRITÓRIO DE APOIO À ATIVIDADE PARLAMENTAR",
+#         "codDocumento": 7735772,
+#         "tipoDocumento": "Nota Fiscal",
+#         "codTipoDocumento": 0,
+#         "dataDocumento": "2024-04-12T00:00:00",
+#         "numDocumento": "1",
+#         "valorDocumento": 250.0,
+#         "urlDocumento": "https://www.camara.leg.br/cota-parlamentar/documentos/publ/3687/2024/7735772.pdf",
+#         "nomeFornecedor": "BRASIL ADM E SERVIÇOS DE COBRANÇA",
+#         "cnpjCpfFornecedor": "33488393000183",
+#         "valorLiquido": 250.0,
+#         "valorGlosa": 0.0,
+#         "numRessarcimento": "",
+#         "codLote": 2039715,
+#         "parcela": 0
+#       },
