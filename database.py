@@ -11,6 +11,6 @@ from models.voto_individual import VotoIndividual
 
 DATABASE_URL = "postgresql://postgres:Wfrso2022@localhost:5432/CamaraDeputadosDB"
 
-engine = create_engine(DATABASE_URL, echo=True)
+engine = create_engine(DATABASE_URL)
 
 target_metadata = SQLModel.metadata
