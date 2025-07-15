@@ -1,18 +1,13 @@
-from http import HTTPStatus
 import math
-from typing import Optional
-from fastapi import APIRouter, HTTPException, Depends, Query
-from sqlmodel import Session, asc, desc, extract, func, select
+from fastapi import APIRouter, Depends
+from sqlmodel import Session, desc, func, select
 from database import get_session
 from dtos.analise_dtos import DeputadoRankingDespesa, PartidoRankingDespesa, ResumoDeputado
-from dtos.deputado_dtos import DeputadoResponseWithGabinete, GabineteResponse
 from log.logger_config import get_logger
 from models.deputado import Deputado
 from models.partido import Partido
-from models.sessao_votacao import SessaoVotacao
 from models.voto_individual import VotoIndividual
 from utils.pagination import PaginatedResponse, PaginationParams
-from sqlalchemy.orm import selectinload
 
 from utils.querys import get_despesas_deputado_2024_subquery
 
