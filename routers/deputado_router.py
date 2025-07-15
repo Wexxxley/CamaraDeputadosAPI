@@ -7,7 +7,7 @@ from database import get_session
 from dtos.deputado_dtos import DeputadoResponseWithGabinete, GabineteResponse
 from log.logger_config import get_logger
 from models.deputado import Deputado
-from pagination import PaginatedResponse, PaginationParams
+from utils.pagination import PaginatedResponse, PaginationParams
 from sqlalchemy.orm import selectinload
 
 logger = get_logger("deputados_logger", "log/deputados.log")
@@ -15,7 +15,7 @@ logger = get_logger("deputados_logger", "log/deputados.log")
 deputado_router = APIRouter(prefix="/deputado", tags=["deputado"])
 
 @deputado_router.get("/get_by_id/{deputado_id}")
-def get_by_id(deputado_id: int, session = Depends(get_session)):
+def get_by_id(deputado_id: int, session: Session = Depends(get_session)):
     
     statement = select(Deputado).where(Deputado.id == deputado_id).options(
         selectinload(Deputado.gabinete)
@@ -33,7 +33,7 @@ def get_by_id(deputado_id: int, session = Depends(get_session)):
     deputado_response = DeputadoResponseWithGabinete.from_model(deputado, gabinete_response)
 
     return deputado_response
-@deputado_router.get("/get_all", response_model=PaginatedResponse[DeputadoResponseWithGabinete])
+@deputado_router.get("/get_all")
 def get_all(
     pagination: PaginationParams = Depends(),
     session: Session = Depends(get_session),
