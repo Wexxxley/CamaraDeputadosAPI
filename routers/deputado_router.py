@@ -1,18 +1,17 @@
-from http import HTTPStatus
 import math
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends, Query
-from sqlmodel import Session, func, select
+from sqlmodel import Session, desc, func, select
 from database import get_session
-from dtos.deputado_dtos import DeputadoCreateWithGabinete, DeputadoResponseWithGabinete, GabineteResponse
+from dtos.analise_dtos import DeputadoRankingDespesa, ResumoDeputado
+from dtos.deputado_dtos import DeputadoResponseWithGabinete, GabineteResponse
 from log.logger_config import get_logger
 from models.deputado import Deputado
-from models.despesa import Despesa
-from models.gabinete import Gabinete
-from models.partido import Partido
 from models.voto_individual import VotoIndividual
 from utils.pagination import PaginatedResponse, PaginationParams
 from sqlalchemy.orm import selectinload
+
+from utils.querys import get_despesas_deputado_2024_subquery
 
 logger = get_logger("deputados_logger", "log/deputados.log")
 
@@ -79,156 +78,61 @@ def get_all(
         total_pages=math.ceil(total / pagination.per_page) if total > 0 else 0
     )
 
-@deputado_router.post("/create")
-def create_deputado_com_gabinete(
-    deputado_data: DeputadoCreateWithGabinete, 
-    session: Session = Depends(get_session)
-):
-    # Verificando se o deputado já existe para evitar duplicatas
-    deputado_existente = session.exec(
-        select(Deputado).where(Deputado.id_dados_abertos == deputado_data.id_dados_abertos)
-    ).first()
-    if deputado_existente:
-        logger.warning(f"Deputado com o id_dados_abertos '{deputado_data.id_dados_abertos}' já existe.")
-        raise HTTPException(
-            status_code=HTTPStatus.CONFLICT,
-            detail=f"Deputado com o id_dados_abertos '{deputado_data.id_dados_abertos}' já existe."
-        )
+@deputado_router.get("/deputados/{id_deputado}/resumo")
+def get_resumo_deputado(id_deputado: int, session: Session = Depends(get_session)):
     
-    #Verificando se o partido existe
-    partido = session.exec(
-        select(Partido).where(deputado_data.id_partido == Partido.id)        
-    ).first()
-    if not partido:
-        logger.warning(f"Partido com o id '{deputado_data.id_partido}' inexistente.")
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST,
-            detail=f"Partido com o id '{deputado_data.id_partido}' inexistente."
-        )
+    despesas_subq = get_despesas_deputado_2024_subquery()
+    gasto_statement = select(despesas_subq.c.total_despesas).where(despesas_subq.c.id_deputado == id_deputado)
+    total_gasto = session.exec(gasto_statement).first() or 0.0
 
-    if deputado_data.sigla_partido.upper() != partido.sigla.upper():
-        logger.warning(f"Sigla do partido com id '{partido.id}' inconsistente com a sigla fornecida.")
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST,
-            detail=f"Sigla do partido com id '{partido.id}' inconsistente com a sigla fornecida."
-        )
-
-    deputado_dict = deputado_data.model_dump(exclude={'gabinete'})
-    deputado_db = Deputado(**deputado_dict)
-  
-    session.add(deputado_db)
-    session.flush()
-    session.refresh(deputado_db)
-
-    gabinete_db = Gabinete(
-        **deputado_data.gabinete.model_dump(),
-        id_deputado=deputado_db.id
+    sessoes_votadas_statement = select(func.count(VotoIndividual.id_votacao.distinct())).where(VotoIndividual.id_deputado == id_deputado)
+    sessoes_votadas = session.exec(sessoes_votadas_statement).one()
+    
+    return ResumoDeputado(
+        id=id_deputado,
+        sessoes_votadas=sessoes_votadas,
+        total_gasto_2024=total_gasto
     )
-    session.add(gabinete_db)
-   
-    session.commit()
 
-    session.refresh(deputado_db)
-    session.refresh(gabinete_db)
+@deputado_router.get("/ranking/deputados_despesa")
+def get_ranking_deputados_despesa(pagination: PaginationParams = Depends(), session: Session = Depends(get_session)):
+    despesas_subq = get_despesas_deputado_2024_subquery()
 
-    deputado_response = DeputadoResponseWithGabinete.from_model(deputado_db, gabinete_db)
-
-    logger.info(f"Deputado com id {deputado_response.id} criado com sucesso.")
-    return deputado_response
-
-@deputado_router.put("/update/{id_dados_abertos}", response_model=DeputadoResponseWithGabinete)
-def update_deputado(
-    id_deputado: int,
-    deputado_data: DeputadoCreateWithGabinete,
-    session: Session = Depends(get_session)
-):
-   
-    deputado_db = session.exec(
-        select(Deputado)
-        .where(Deputado.id == id_deputado)
-        .options(selectinload(Deputado.gabinete))
-    ).first()
-
-    if not deputado_db:
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND,
-            detail=f"Deputado com o id '{id_deputado}' não encontrado."
+    statement = (
+        select(
+            Deputado,
+            func.coalesce(despesas_subq.c.total_despesas, 0.0).label("total_despesas")
         )
-
-    partido = session.exec(select(Partido).where(Partido.id == deputado_data.id_partido)).first()
-    if not partido:
-        logger.warning(f"Partido com o id '{deputado_data.id_partido}' é inexistente.")
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST,
-            detail=f"Partido com o id '{deputado_data.id_partido}' é inexistente."
-        )
-    if deputado_data.sigla_partido.upper() != partido.sigla.upper():
-        logger.warning(f"Sigla do partido inconsistente com o id do partido fornecido.")
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST,
-            detail="Sigla do partido inconsistente com o id do partido fornecido."
-        )
-
-    deputado_update_dict = deputado_data.model_dump(exclude={'gabinete'})
-    for key, value in deputado_update_dict.items():
-        setattr(deputado_db, key, value)
-
-    gabinete_update_dict = deputado_data.gabinete.model_dump()
-    if deputado_db.gabinete:
-        for key, value in gabinete_update_dict.items():
-            setattr(deputado_db.gabinete, key, value)
-    else:
-        novo_gabinete = Gabinete(**gabinete_update_dict, id_deputado=deputado_db.id_dados_abertos)
-        session.add(novo_gabinete)
-
-    session.add(deputado_db)
-    session.commit()
-    session.refresh(deputado_db)
-
-    gabinete_response = GabineteResponse.from_model(deputado_db.gabinete) if deputado_db.gabinete else None
-    deputado_response = DeputadoResponseWithGabinete.from_model(deputado_db, gabinete_response)
+        .join(despesas_subq, Deputado.id == despesas_subq.c.id_deputado, isouter=True)
+        .order_by(desc(func.coalesce(despesas_subq.c.total_despesas, 0.0)))
+    )
     
-    logger.info(f"Deputado com id {deputado_response.id} atualizado com sucesso.")
-    return deputado_response
+    count_statement = select(func.count()).select_from(statement.subquery())
+    total = session.exec(count_statement).one()
 
-@deputado_router.delete("/delete/{id_deputado}")
-def delete_deputado(
-    id_deputado: int,
-    session: Session = Depends(get_session)
-):
+    offset = (pagination.page - 1) * pagination.per_page
+    analise_statement = statement.offset(offset).limit(pagination.per_page)
 
-    deputado_db = session.exec(
-        select(Deputado).where(Deputado.id == id_deputado)
-    ).first()
+    results = session.exec(analise_statement).all()
 
-    if not deputado_db:
-        logger.warning(f"Nao foi possivel deletar deputado. Id deputado {id_deputado} nao encontrado.")
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND,
-            detail=f"Deputado com o id '{id_deputado}' não encontrado."
+    ranking = [
+        DeputadoRankingDespesa(
+            id=dep.id,
+            id_dados_abertos=dep.id_dados_abertos,
+            nome_eleitoral=dep.nome_eleitoral,
+            sigla_partido=dep.sigla_partido,
+            sigla_uf=dep.sigla_uf,
+            url_foto=dep.url_foto,
+            sexo=dep.sexo,
+            total_despesas= round(total_despesas, 2)
         )
-
-    despesas_a_deletar = session.exec(
-        select(Despesa).where(Despesa.id_deputado == id_deputado)
-    ).all()
-    for despesa in despesas_a_deletar:
-        session.delete(despesa)
+        for dep, total_despesas in results
+    ]
     
-    votos_a_deletar = session.exec(
-        select(VotoIndividual).where(VotoIndividual.id_deputado == id_deputado)
-    ).all()
-    for voto in votos_a_deletar:
-        session.delete(voto)
-    
-    gabinete_a_deletar = session.exec(
-        select(Gabinete).where(Gabinete.id_deputado == id_deputado)
-    ).first()
-    if gabinete_a_deletar:
-        session.delete(gabinete_a_deletar)
-
-    session.delete(deputado_db)
-
-    session.commit()
-
-    logger.info(f"Deputado deletado com sucesso.")
-    return {"message": "Deputado deletado com sucesso."}
+    return PaginatedResponse(
+        items=ranking, 
+        total=total,
+        page=pagination.page,
+        per_page=pagination.per_page,
+        total_pages=math.ceil(total / pagination.per_page) if total > 0 else 0
+    )

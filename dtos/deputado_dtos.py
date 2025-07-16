@@ -56,36 +56,3 @@ class DeputadoResponseWithGabinete(SQLModel):
             sexo=deputado.sexo,
             gabinete=gabinete 
         )
-
-class GabineteCreate(SQLModel):
-    nome: str
-    andar: str
-    sala: str
-    predio: str
-    telefone: str
-    email: str
-
-class DeputadoCreateWithGabinete(SQLModel):
-    id_dados_abertos: int = Field(..., description="ID único do deputado na API de Dados Abertos.")
-    nome_civil: str
-    nome_eleitoral: str
-    sigla_partido: str
-    sigla_uf: str = Field(..., min_length=2, max_length=2, description="Sigla do estado com 2 caracteres.")
-    id_partido: int
-    id_legislativo: int
-    url_foto: str 
-    sexo: str = Field(..., description="Deve ser 'M' para Masculino ou 'F' para Feminino.")
-    gabinete: GabineteCreate 
-
-    @field_validator("sexo")
-    @classmethod
-    def valida_sexo(cls, sexo: str):
-        sexo_upper = sexo.upper() 
-        if sexo_upper not in ("M", "F"):
-            raise HTTPException(status_code=400, detail='O sexo deve ser "M" ou "F".')
-        return sexo_upper
-    
-    @field_validator("sigla_partido", "sigla_uf")
-    @classmethod
-    def upper_sigla(cls, sigla: str):
-        return sigla.upper()
