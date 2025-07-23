@@ -1,6 +1,6 @@
 from typing import Optional, List
 from sqlmodel import Field, SQLModel, Relationship
-from models.despesa import Despesa
+# from models.despesa import Despesa
 from models.voto_individual import VotoIndividual
 from models.gabinete import Gabinete
 from models.partido import Partido

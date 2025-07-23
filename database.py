@@ -9,7 +9,7 @@ from models.sessao_votacao import SessaoVotacao
 from models.votacao_proposicao import VotacaoProposicao
 from models.voto_individual import VotoIndividual
 
-DATABASE_URL = "postgresql://postgres:Wfrso2022@localhost:5432/CamaraDeputadosDB"
+DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/CamaraDeputadosDB"
 
 engine = create_engine(DATABASE_URL)
 

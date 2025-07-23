@@ -1,6 +1,7 @@
 
 from typing import Optional
 from sqlmodel import Field, SQLModel, Relationship
+from models.deputado import Deputado  
 
 class Despesa(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
