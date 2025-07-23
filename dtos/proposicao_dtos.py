@@ -24,3 +24,11 @@ class ProposicaoResponse(SQLModel):
             status=proposicao.status,
             url_inteiro_teor=proposicao.url_inteiro_teor
         )
+    
+class ProposicaoMaisVotadaDTO(SQLModel):
+    id: int
+    id_dados_abertos: str
+    sigla_tipo: str
+    ano: int
+    ementa: Optional[str]
+    total_votacoes: int

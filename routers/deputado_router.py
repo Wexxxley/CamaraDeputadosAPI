@@ -136,3 +136,4 @@ def get_ranking_deputados_despesa(pagination: PaginationParams = Depends(), sess
         per_page=pagination.per_page,
         total_pages=math.ceil(total / pagination.per_page) if total > 0 else 0
     )
+
