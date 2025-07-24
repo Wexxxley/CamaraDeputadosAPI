@@ -9,6 +9,13 @@ from log.logger_config import get_logger
 from models.deputado import Deputado
 from models.voto_individual import VotoIndividual
 from utils.pagination import PaginatedResponse, PaginationParams
+from models.sessao_votacao import SessaoVotacao
+from models.votacao_proposicao import VotacaoProposicao
+from models.proposicao import Proposicao
+from typing import List
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+from dtos.deputado_dtos import DeputadoMaisVotouSimDTO
 from sqlalchemy.orm import selectinload
 
 from utils.querys import get_despesas_deputado_2024_subquery
@@ -17,6 +24,7 @@ logger = get_logger("deputados_logger", "log/deputados.log")
 
 deputado_router = APIRouter(prefix="/deputado", tags=["Deputado"])
 
+# Endpoint para obter um deputado por ID com detalhes do gabinete
 @deputado_router.get("/get_by_id/{deputado_id}")
 def get_by_id(deputado_id: int, session: Session = Depends(get_session)):
     
@@ -37,6 +45,7 @@ def get_by_id(deputado_id: int, session: Session = Depends(get_session)):
 
     return deputado_response
 
+# Endpoint para obter todos os deputados com paginação e filtros
 @deputado_router.get("/get_all")
 def get_all(
     pagination: PaginationParams = Depends(),
@@ -78,6 +87,7 @@ def get_all(
         total_pages=math.ceil(total / pagination.per_page) if total > 0 else 0
     )
 
+# Endpoint para obter resumo de um deputado específico
 @deputado_router.get("/deputados/{id_deputado}/resumo")
 def get_resumo_deputado(id_deputado: int, session: Session = Depends(get_session)):
     
@@ -94,6 +104,7 @@ def get_resumo_deputado(id_deputado: int, session: Session = Depends(get_session
         total_gasto_2024=total_gasto
     )
 
+# Endpoint para obter o ranking dos deputados por despesas em 2024
 @deputado_router.get("/ranking/deputados_despesa")
 def get_ranking_deputados_despesa(pagination: PaginationParams = Depends(), session: Session = Depends(get_session)):
     despesas_subq = get_despesas_deputado_2024_subquery()
@@ -137,3 +148,34 @@ def get_ranking_deputados_despesa(pagination: PaginationParams = Depends(), sess
         total_pages=math.ceil(total / pagination.per_page) if total > 0 else 0
     )
 
+# Ranking dos Deputados que mais votaram "Sim" em Projetos de Lei (PL)
+@deputado_router.get("/ranking/deputados/votos_sim_pl", response_model=List[DeputadoMaisVotouSimDTO])
+def ranking_votos_sim_em_pl(session: Session = Depends(get_session)):
+    stmt = (
+        select(
+            Deputado.id.label("id_deputado"),
+            Deputado.nome_eleitoral,
+            Deputado.sigla_partido,
+            Deputado.sigla_uf,
+            func.count(VotoIndividual.id).label("total_votos_sim")
+        )
+        .join(VotoIndividual, VotoIndividual.id_deputado == Deputado.id)
+        .join(SessaoVotacao, SessaoVotacao.id == VotoIndividual.id_votacao)
+        .join(VotacaoProposicao, VotacaoProposicao.id_votacao == SessaoVotacao.id)
+        .join(Proposicao, Proposicao.id == VotacaoProposicao.id_proposicao)
+        .where(
+            VotoIndividual.tipo_voto.ilike("Sim"),
+            Proposicao.sigla_tipo == "PL"
+        )
+        .group_by(
+            Deputado.id,
+            Deputado.nome_eleitoral,
+            Deputado.sigla_partido,
+            Deputado.sigla_uf
+        )
+        .order_by(func.count(VotoIndividual.id).desc())
+        .limit(10)
+    )
+
+    results = session.exec(stmt).all()
+    return [DeputadoMaisVotouSimDTO(**r._asdict()) for r in results]

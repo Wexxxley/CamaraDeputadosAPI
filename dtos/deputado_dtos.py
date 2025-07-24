@@ -54,3 +54,10 @@ class DeputadoResponseWithGabinete(SQLModel):
             sexo=deputado.sexo,
             gabinete=gabinete 
         )
+    
+class DeputadoMaisVotouSimDTO(SQLModel):
+    id_deputado: int
+    nome_eleitoral: str
+    sigla_partido: str
+    sigla_uf: str
+    total_votos_sim: int
