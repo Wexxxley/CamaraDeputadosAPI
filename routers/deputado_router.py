@@ -5,8 +5,10 @@ from sqlmodel import Session, desc, func, select
 from database import get_session
 from dtos.analise_dtos import DeputadoRankingDespesa, ResumoDeputado
 from dtos.deputado_dtos import DeputadoResponseWithGabinete, GabineteResponse
+from dtos.ranking_deputados_atuantes_dtos import DeputadoRankingDTO
 from log.logger_config import get_logger
 from models.deputado import Deputado
+from models.votacao_proposicao import VotacaoProposicao
 from models.voto_individual import VotoIndividual
 from utils.pagination import PaginatedResponse, PaginationParams
 from sqlalchemy.orm import selectinload
@@ -80,6 +82,11 @@ def get_all(
 
 @deputado_router.get("/deputados/{id_deputado}/resumo")
 def get_resumo_deputado(id_deputado: int, session: Session = Depends(get_session)):
+    """
+    Retorna um resumo de um deputado específico, com seu gasto total em 2024 e o número de sessões que votou. 
+
+    Entidades: Deputado e VotoIndividual.
+    """
     
     despesas_subq = get_despesas_deputado_2024_subquery()
     gasto_statement = select(despesas_subq.c.total_despesas).where(despesas_subq.c.id_deputado == id_deputado)
@@ -96,6 +103,10 @@ def get_resumo_deputado(id_deputado: int, session: Session = Depends(get_session
 
 @deputado_router.get("/ranking/deputados_despesa")
 def get_ranking_deputados_despesa(pagination: PaginationParams = Depends(), session: Session = Depends(get_session)):
+    """
+    Retorna um ranking paginado de deputados com base no total de suas despesas em 2024, do maior para o menor. 
+    Entidades: Deputado e Despesa
+    """
     despesas_subq = get_despesas_deputado_2024_subquery()
 
     statement = (
@@ -135,4 +146,64 @@ def get_ranking_deputados_despesa(pagination: PaginationParams = Depends(), sess
         page=pagination.page,
         per_page=pagination.per_page,
         total_pages=math.ceil(total / pagination.per_page) if total > 0 else 0
+    )
+
+@deputado_router.get("/ranking/atuantes", response_model=PaginatedResponse[DeputadoRankingDTO])
+def get_ranking_deputados__mais_atuantes(
+    pagination: PaginationParams = Depends(),
+    session: Session = Depends(get_session)
+):
+    """
+    Obtém um ranking paginado dos deputados mais atuantes com base em sua participação em votações.
+
+    A "atuação" é medida pelo número total de sessões de votação distintas em que o 
+    deputado participou. O endpoint também retorna o número de proposições únicas votadas como 
+    uma métrica secundária.
+
+    Entidades: Deputado, VotoIndividual e VotacaoProposicao
+    """
+    stmt = (
+        select(
+            Deputado.id,
+            Deputado.nome_eleitoral,
+            Deputado.sigla_partido,
+            Deputado.sigla_uf,
+            func.count(func.distinct(VotoIndividual.id_votacao)).label("total_votacoes"),
+            func.count(func.distinct(VotacaoProposicao.id_proposicao)).label("total_proposicoes")
+        )
+        .join(VotoIndividual, VotoIndividual.id_deputado == Deputado.id)
+        .join(VotacaoProposicao, VotacaoProposicao.id_votacao == VotoIndividual.id_votacao)
+        .group_by(Deputado.id)
+        .order_by(func.count(func.distinct(VotoIndividual.id_votacao)).desc())
+        .offset((pagination.page - 1) * pagination.per_page)
+        .limit(pagination.per_page)
+    )
+
+    results = session.exec(stmt).all()
+
+    count_stmt = (
+        select(func.count(func.distinct(Deputado.id)))
+        .join(VotoIndividual, VotoIndividual.id_deputado == Deputado.id)
+        .join(VotacaoProposicao, VotacaoProposicao.id_votacao == VotoIndividual.id_votacao)
+    )
+
+    total = session.exec(count_stmt).one()
+
+    items = [
+        DeputadoRankingDTO(
+            id=r[0],
+            nome_eleitoral=r[1],
+            sigla_partido=r[2],
+            sigla_uf=r[3],
+            total_votacoes=r[4],
+            total_proposicoes=r[5]
+        ) for r in results
+    ]
+
+    return PaginatedResponse(
+        items=items,
+        total=total,
+        page=pagination.page,
+        per_page=pagination.per_page,
+        total_pages=(total // pagination.per_page + int(total % pagination.per_page > 0))
     )

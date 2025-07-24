@@ -1,6 +1,4 @@
-from http import HTTPStatus
-from fastapi import HTTPException
-from pydantic import field_validator
+
 from sqlmodel import Field, SQLModel
 from typing import Optional
 
@@ -56,3 +54,10 @@ class DeputadoResponseWithGabinete(SQLModel):
             sexo=deputado.sexo,
             gabinete=gabinete 
         )
+    
+class DeputadoMaisVotouSimDTO(SQLModel):
+    id_deputado: int
+    nome_eleitoral: str
+    sigla_partido: str
+    sigla_uf: str
+    total_votos_sim: int

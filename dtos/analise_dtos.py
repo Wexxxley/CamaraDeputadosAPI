@@ -22,4 +22,3 @@ class ResumoDeputado(SQLModel):
     id: int
     sessoes_votadas: int
     total_gasto_2024: float
-
