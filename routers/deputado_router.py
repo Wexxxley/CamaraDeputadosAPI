@@ -207,3 +207,4 @@ def get_ranking_deputados__mais_atuantes(
         per_page=pagination.per_page,
         total_pages=(total // pagination.per_page + int(total % pagination.per_page > 0))
     )
+

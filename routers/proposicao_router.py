@@ -3,6 +3,7 @@ from sqlmodel import Session, select, func
 from database import get_session
 from log.logger_config import get_logger
 from models.proposicao import Proposicao
+from models.sessao_votacao import SessaoVotacao
 from utils.pagination import PaginatedResponse, PaginationParams
 import math
 from typing import Optional
@@ -49,9 +50,43 @@ def get_all_proposicoes(
         total_pages=math.ceil(total / pagination.per_page) if total > 0 else 0
     )
 
+
+@proposicao_router.get("/{proposicao_id}/sessoes")
+def get_sessoes_por_proposicao(
+    proposicao_id: int, 
+    session: Session = Depends(get_session)
+):
+    """
+    Busca todas as sessões de votação associadas a uma proposição específica.
+    Entidades: Votacao e VotacaoProposicao.
+    """
+    # 1. Opcional, mas recomendado: Verificar se a proposição existe primeiro
+    proposicao = session.get(Proposicao, proposicao_id)
+    if not proposicao:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Proposição com ID {proposicao_id} não encontrada."
+        )
+
+    # 2. Monta a query para buscar as votações
+    stmt = (
+        select(SessaoVotacao)
+        .join(VotacaoProposicao, VotacaoProposicao.id_votacao == SessaoVotacao.id)
+        .where(VotacaoProposicao.id_proposicao == proposicao_id)
+        .order_by(SessaoVotacao.data_hora_registro.desc())  # Opcional: ordena as mais recentes primeiro
+    )
+
+    sessoes = session.exec(stmt).all()
+    
+    return sessoes
+
 # Obtém as 10 proposições mais votadas
-@proposicao_router.get("/mais_votadas", response_model=list[ProposicaoMaisVotadaDTO])
-def get_proposicoes_mais_votadas(session: Session = Depends(get_session)):
+@proposicao_router.get("/mais_votadas/{limite}", response_model=list[ProposicaoMaisVotadaDTO])
+def get_proposicoes_mais_votadas(limite: int, session: Session = Depends(get_session)):
+    """
+    Retorna as 10 proposições mais votadas, com base no número de sessões de votação associadas. 
+    Entidades: Proposicao, VotacaoProposicao.
+    """
     stmt = (
         select(
             Proposicao.id,
@@ -64,7 +99,7 @@ def get_proposicoes_mais_votadas(session: Session = Depends(get_session)):
         .join(VotacaoProposicao, VotacaoProposicao.id_proposicao == Proposicao.id)
         .group_by(Proposicao.id)
         .order_by(func.count(VotacaoProposicao.id_votacao).desc())
-        .limit(10)
+        .limit(limite)
     )
 
     results = session.exec(stmt).all()

@@ -1,14 +1,17 @@
+import math
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlmodel import Session, desc, func, select
+from sqlmodel import Session, String, case, desc, func, select
 from database import get_session
 from dtos.analise_dtos import PartidoRankingDespesa
 from dtos.ranking_deputados_atuantes_dtos import DeputadoRankingDTO
 from log.logger_config import get_logger
 from models.deputado import Deputado
 from models.despesa import Despesa
+from models.gabinete import Gabinete
 from models.partido import Partido
 
+from models.sessao_votacao import SessaoVotacao
 from models.votacao_proposicao import VotacaoProposicao
 from models.voto_individual import VotoIndividual
 from utils.pagination import PaginatedResponse, PaginationParams
@@ -16,44 +19,7 @@ from utils.querys import get_despesas_deputado_2024_subquery
 
 logger = get_logger("analises_logger", "log/analises.log")
 
-analise_router = APIRouter(prefix="/analise", tags=["Analises"])
-
-@analise_router.get("/ranking/partidos_despesa")
-def get_ranking_partidos_despesa(session: Session = Depends(get_session)):
-    """
-    Retorna um ranking de partidos ordenado pela soma total das despesas de seus deputados em 2024. 
-    
-    Entidades: Partido, Deputado e Despesa.
-    """
-    
-    despesas_subq = get_despesas_deputado_2024_subquery()
-    
-    statement = (
-        select(
-            Partido,
-            func.sum(despesas_subq.c.total_despesas).label("total_geral_partido")
-        )
-        .join(Deputado, Partido.id == Deputado.id_partido)
-        .join(despesas_subq, Deputado.id == despesas_subq.c.id_deputado)
-        .group_by(Partido.id)
-        .order_by(desc("total_geral_partido"))
-    )
-    
-    results = session.exec(statement).all()
-
-    ranking = [
-        PartidoRankingDespesa(
-            id= partido.id,
-            id_dados_abertos = partido.id_dados_abertos,
-            sigla=partido.sigla,
-            nome_completo=partido.nome_completo,
-            total_despesas=round(total)
-        )
-        for partido, total in results
-    ]
-    return ranking
-
-
+analise_router = APIRouter(prefix="/analise", tags=["Analises complementares"])
 
 @analise_router.get("/comparativo_estados")
 async def comparativo_gastos_estados(
@@ -70,7 +36,7 @@ async def comparativo_gastos_estados(
     Agrupa os gastos parlamentares por estado, retornando o gasto 
     total, a média e a quantidade de despesas. 
     
-    Entidades: Deputado e Despesa.
+    Entidades: `Deputado` e `Despesa`.
     """
     try:
         stmt = (
@@ -107,4 +73,61 @@ async def comparativo_gastos_estados(
         raise HTTPException(
             status_code=500,
             detail="Erro interno ao processar análise de gastos"
+        )  
+
+@analise_router.get("/ranking/alinhamento_resultado")
+def get_ranking_alinhamento_partidario(
+    session: Session = Depends(get_session)
+):
+    """
+    Calcula e ranqueia os partidos pelo seu percentual de alinhamento com o resultado
+    final das votações de 2024 (votar 'Sim' em pautas aprovadas ou 'Não' em reprovadas).
+
+    Entidades: `Partido`, `Deputado`, `VotoIndividual` e `SessaoVotacao`.
+
+    """
+    voto_alinhado_expression = case(
+        (
+            (VotoIndividual.tipo_voto == 'Sim') & (SessaoVotacao.aprovacao == '1'), 1
+        ),
+        (
+            (VotoIndividual.tipo_voto == 'Não') & (SessaoVotacao.aprovacao == '0'), 1
+        ),
+        else_=0
+    )
+
+    stmt = (
+        select(
+            Partido.sigla,
+            Partido.nome_completo,
+            func.sum(voto_alinhado_expression).label("votos_alinhados"),
+            func.count(VotoIndividual.id).label("votos_totais_decisivos")
         )
+        .select_from(Partido)
+        .join(Deputado, Partido.id == Deputado.id_partido)
+        .join(VotoIndividual, Deputado.id == VotoIndividual.id_deputado)
+        .join(SessaoVotacao, VotoIndividual.id_votacao == SessaoVotacao.id)
+        .where(VotoIndividual.tipo_voto.in_(['Sim', 'Não']))
+        .where(SessaoVotacao.aprovacao.in_(['1', '0']))
+        .where(func.cast(VotoIndividual.data_hora_registro, String).startswith('2024'))
+    )
+
+    stmt = stmt.group_by(Partido.sigla, Partido.nome_completo)
+    
+    resultados = session.exec(stmt).all()
+    
+    items = []
+    for r in resultados:
+        if r.votos_totais_decisivos > 0:
+            percentual = round((r.votos_alinhados / r.votos_totais_decisivos) * 100, 2)
+            items.append({
+                "sigla_partido": r.sigla,
+                "nome_partido": r.nome_completo,
+                "votos_alinhados": r.votos_alinhados,
+                "votos_totais_decisivos": r.votos_totais_decisivos,
+                "percentual_alinhamento": percentual
+            })
+
+    items_ordenados = sorted(items, key=lambda p: p['percentual_alinhamento'], reverse=True)
+
+    return items_ordenados
