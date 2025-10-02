@@ -1,18 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select, func
-<<<<<<< HEAD
 from api.tratamentoDados.database import get_session
 from api.log.logger_config import get_logger
 from api.models.proposicao import Proposicao
 from api.models.sessao_votacao import SessaoVotacao
 from api.utils.pagination import PaginatedResponse, PaginationParams
-=======
-from tratamentoDados.database import get_session
-from log.logger_config import get_logger
-from models.proposicao import Proposicao
-from models.sessao_votacao import SessaoVotacao
-from utils.pagination import PaginatedResponse, PaginationParams
->>>>>>> origin/Refatorando
 import math
 from typing import Optional
 from api.dtos.proposicao_dtos import  ProposicaoMaisVotadaDTO

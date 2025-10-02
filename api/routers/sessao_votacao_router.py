@@ -4,15 +4,9 @@ from sqlalchemy import select, func
 from typing import Optional
 import math
 
-<<<<<<< HEAD
 from api.models.sessao_votacao import SessaoVotacao
 from api.tratamentoDados.database import get_session
 from api.utils.pagination import PaginatedResponse, PaginationParams
-=======
-from models.sessao_votacao import SessaoVotacao
-from tratamentoDados.database import get_session
-from utils.pagination import PaginatedResponse, PaginationParams
->>>>>>> origin/Refatorando
 
 sessaovotacao_router = APIRouter(  
     prefix="/sessaovotacao",

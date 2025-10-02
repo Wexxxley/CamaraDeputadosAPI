@@ -3,18 +3,11 @@ from sqlalchemy import desc
 from sqlmodel import Session, select, func
 from typing import List
 from typing import Optional
-<<<<<<< HEAD
 
 from api.dtos.analise_dtos import PartidoRankingDespesa
 from api.tratamentoDados.database import get_session
 from api.models.partido import Partido
 from api.utils.pagination import PaginationParams, PaginatedResponse
-=======
-from tratamentoDados.database import get_session
-from dtos.analise_dtos import PartidoRankingDespesa
-from models.partido import Partido
-from utils.pagination import PaginationParams, PaginatedResponse
->>>>>>> origin/Refatorando
 import math
 from api.models.deputado import Deputado
 from sqlalchemy.orm import selectinload

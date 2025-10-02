@@ -1,17 +1,10 @@
 from fastapi import APIRouter, Depends
 from sqlmodel import Session, select
 from typing import List
-<<<<<<< HEAD
 from api.tratamentoDados.database import get_session
 from api.log.logger_config import get_logger
 from api.models.voto_individual import VotoIndividual
 from api.models.votacao_proposicao import VotacaoProposicao
-=======
-from tratamentoDados.database import get_session
-from log.logger_config import get_logger
-from models.voto_individual import VotoIndividual
-from models.votacao_proposicao import VotacaoProposicao
->>>>>>> origin/Refatorando
 
 logger = get_logger("votos_individuais_logger", "log/votos_individuais.log")
 voto_router = APIRouter(prefix="/voto_individual", tags=["Voto Individual"])
