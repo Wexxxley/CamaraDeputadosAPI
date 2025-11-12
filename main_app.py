@@ -1,3 +1,5 @@
+from contextlib import closing
+import socket
 import tkinter as tk
 from tkinter import ttk, scrolledtext
 import threading
@@ -6,35 +8,29 @@ import os
 import webbrowser
 import time
 import uvicorn
-
-# --- Importações dos módulos ---
 from api.tratamentoDados.processador import run_data_processing
 from api.main import app as fastapi_app
+from style_config import configure_styles
 
 class App:
     def __init__(self, root):
         self.root = root
         self.root.title("Analisador Parlamentar")
         self.root.geometry("650x500")
-        self.root.configure(bg="#1e2a38")
+        self.root.configure(bg="#1e1e2f") # Cor base da janela
 
-        # Fila para comunicação segura entre a thread de trabalho e a GUI
         self.queue = queue.Queue()
-
+        
         self.setup_styles()
+        
         self.create_widgets()
         self.root.after(100, self.process_queue)
 
     def setup_styles(self):
-        style = ttk.Style()
-        style.theme_use("clam")
-        style.configure("TFrame", background="#1e2a38")
-        style.configure("TLabel", background="#1e2a38", foreground="#f7c873", font=("Segoe UI", 12, "bold"))
-        style.configure("Header.TLabel", background="#1e2a38", foreground="#f7c873", font=("Segoe UI", 18, "bold"))
-        style.configure("TButton", background="#f7c873", foreground="#1e2a38", font=("Segoe UI", 12, "bold"))
-        style.map("TButton", background=[("active", "#f7c873")])
-        style.configure("TCombobox", fieldbackground="#f7c873", background="#f7c873", foreground="#1e2a38", font=("Segoe UI", 12))
-        style.configure("TProgressbar", troughcolor="#f7c873", background="#1e2a38", thickness=20)
+        """Chama a configuração de estilo externa e armazena cores extras."""
+        # A função configure_styles aplica os estilos ttk globalmente
+        # e retorna as cores que precisamos para widgets customizados.
+        self.widget_colors = configure_styles()
 
     def create_widgets(self):
         main_frame = ttk.Frame(self.root, padding="15")
@@ -66,7 +62,16 @@ class App:
 
         # --- Seção de Log ---
         ttk.Label(main_frame, text="Log de Atividades:").pack(anchor=tk.W, pady=(15, 0))
-        self.log_area = scrolledtext.ScrolledText(main_frame, wrap=tk.WORD, height=15, font=("Consolas", 11), bg="#263445", fg="#f7c873", insertbackground="#f7c873")
+        # Use as cores retornadas pela função de estilo
+        self.log_area = scrolledtext.ScrolledText(
+            main_frame, 
+            wrap=tk.WORD, 
+            height=15, 
+            font=("Consolas", 11), 
+            bg=self.widget_colors["log_bg"],
+            fg=self.widget_colors["log_fg"],
+            insertbackground=self.widget_colors["cursor_color"]
+        )
         self.log_area.pack(fill=tk.BOTH, expand=True, pady=2)
         self.log_area.configure(state='disabled')
 
@@ -109,6 +114,14 @@ class App:
             daemon=True
         ).start()
 
+
+    def find_free_port(self):
+            """Encontra e retorna uma porta TCP livre no localhost."""
+            with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
+                s.bind(('127.0.0.1', 0)) # O 0 pede ao SO uma porta livre
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                return s.getsockname()[1] # Retorna o número da porta alocada
+            
     def main_orchestrator(self, year):
         def progress_callback(msg_type, data):
             self.queue.put((msg_type, data))
@@ -118,20 +131,27 @@ class App:
             if not success:
                 raise Exception("O processamento de dados falhou.")
 
+            self.queue.put(('log', "Procurando uma porta livre para a API..."))
+            free_port = self.find_free_port()
+
             self.queue.put(('log', "Iniciando servidor da API local..."))
             os.environ['DATABASE_YEAR'] = str(year)
 
             api_thread = threading.Thread(
-                target=lambda: uvicorn.run(fastapi_app, host="127.0.0.1", port=8000, log_level="warning"),
+                target=lambda: uvicorn.run(fastapi_app, host="127.0.0.1", port=free_port, log_level="warning"),
                 daemon=True
             )
             api_thread.start()
-            time.sleep(5)
-            self.queue.put(('log', "API rodando em http://127.0.0.1:8000"))
+            time.sleep(5) 
+
+            self.queue.put(('log', f"API rodando em http://127.0.0.1:{free_port}"))
 
             self.queue.put(('log', "Abrindo a interface de visualização..."))
             html_file_path = os.path.join("frontend", "index.html")
-            webbrowser.open(f'file://{os.path.realpath(html_file_path)}?year={year}')
+            
+            # Passa a porta para o frontend através da URL
+            webbrowser.open(f'http://127.0.0.1:{free_port}/?year={year}&port={free_port}')
+
 
         except Exception as e:
             self.queue.put(('log', f"ERRO CRÍTICO: {e}"))
