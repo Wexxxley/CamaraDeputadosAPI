@@ -3,7 +3,8 @@
 Este projeto oferece uma API robusta e um backend analítico para extrair, processar e servir dados complexos da Câmara dos Deputados, com foco especial nas atividades do ano de 2024. Nossa missão é transformar dados brutos e de difícil acesso em insights claros e compreensíveis para qualquer cidadão.
 
 Vídeo no Youtube explicando o projeto: https://youtu.be/KikydU9HogU?si=XTwK8__SgF_kAhPV
------
+
+---
 
 ## 📜 Índice
 
@@ -23,7 +24,7 @@ Vídeo no Youtube explicando o projeto: https://youtu.be/KikydU9HogU?si=XTwK8__S
   * **Monitorar o Comportamento Parlamentar:** Fornecer ferramentas para analisar padrões de gastos, votações e alinhamento político.
   * **Facilitar o Acesso:** Disponibilizar os dados através de uma API bem documentada, permitindo que desenvolvedores, jornalistas e cidadãos criem suas próprias análises.
 
------
+---
 
 ## 💰 Entendendo a Cota Parlamentar
 
@@ -43,7 +44,7 @@ As principais categorias de despesas permitidas são:
   * Consultorias, assessorias e pesquisas.
   * Hospedagem, alimentação e segurança.
 
------
+---
 
 ## 🛠️ Tecnologias Utilizadas
 
@@ -57,7 +58,7 @@ Este projeto foi construído com uma stack de tecnologias moderna e performátic
 | **PostgreSQL** | Sistema de gerenciamento de banco de dados relacional, robusto e confiável para armazenar os dados coletados. |
 | **Chart.js** | Biblioteca utilizada no frontend de demonstração para criar gráficos interativos e visualmente agradáveis. |
 
------
+---
 
 ## 🗃️ Estrutura do Banco de Dados
 
@@ -65,7 +66,7 @@ Os dados coletados são organizados em um esquema relacional no PostgreSQL, proj
 
 ![alt text](imgs/schema.png)
 
------
+---
 
 ## 🔌 Exemplos de Endpoints da API
 
@@ -73,6 +74,7 @@ Nossa API oferece uma variedade de endpoints para análises complexas, permitind
 
 ![alt text](imgs/endpoints.png)
 
+---
 
 ## 📊 Demonstração do Dashboard
 
@@ -81,7 +83,7 @@ Para ilustrar o potencial da API, foi desenvolvido um frontend de exemplo que co
 ![alt text](imgs/d1.png)
 ![alt text](imgs/d2.png)
 
------
+---
 
 ## 🌐 Fonte dos Dados
 
