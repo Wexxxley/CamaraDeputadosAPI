@@ -1,7 +1,5 @@
 # Análise Parlamentar - Câmara dos Deputados (2024)
 
-**Promovendo a transparência no legislativo brasileiro.**
-
 Este projeto oferece uma API robusta e um backend analítico para extrair, processar e servir dados complexos da Câmara dos Deputados, com foco especial nas atividades do ano de 2024. Nossa missão é transformar dados brutos e de difícil acesso em insights claros e compreensíveis para qualquer cidadão.
 
 Vídeo no Youtube explicando o projeto: https://youtu.be/KikydU9HogU?si=XTwK8__SgF_kAhPV
@@ -28,9 +26,9 @@ Vídeo no Youtube explicando o projeto: https://youtu.be/KikydU9HogU?si=XTwK8__S
 
 -----
 
-## 💰 Entendendo a CEAP (Cota Parlamentar)
+## 💰 Entendendo a Cota Parlamentar
 
-Um dos principais focos de análise do projeto são os gastos realizados através da **Cota para o Exercício da Atividade Parlamentar (CEAP)**, popularmente conhecida como "Cotão". O mecanismo funciona como um sistema de reembolso:
+Um dos principais focos de análise do projeto são os gastos realizados através da **Cota para o Exercício da Atividade Parlamentar (CEAP)**. O mecanismo funciona como um sistema de reembolso:
 
 > 1.  **O Gasto:** O deputado federal realiza uma despesa para executar seu trabalho.
 > 2.  **O Pagamento:** Ele paga por esse serviço com seus próprios recursos.
@@ -45,18 +43,6 @@ As principais categorias de despesas permitidas são:
   * Divulgação da atividade parlamentar.
   * Consultorias, assessorias e pesquisas.
   * Hospedagem, alimentação e segurança.
-
----
-
-### 💼 Salário e Outros Benefícios
-
-Além da Cota Parlamentar (CEAP), é importante entender a estrutura completa de remuneração de um Deputado Federal para uma análise contextualizada. Os principais benefícios, além da cota de despesas, são:
-
-* **Salário Bruto:** **R$ 46.366,19**
-* **Verba de Gabinete:** Cerca de **R$ 118.000 por mês** para contratar até 25 secretários parlamentares para auxiliar nos trabalhos em Brasília e nos estados.
-* **Auxílio-Moradia ou Imóvel Funcional:** Direito a ocupar um apartamento funcional em Brasília ou, na falta deste, receber um auxílio de **R$ 4.253,00** mensais.
-* **Ajuda de Custo ("Auxílio-Paletó"):** Um pagamento extra, equivalente a um salário, no **início e no final de cada mandato** de 4 anos.
-* **Saúde e Previdência:** Acesso a um plano de saúde vitalício (com sistema de reembolso) e a um regime de aposentadoria especial (PSSC), com regras distintas do INSS geral.
 
 -----
 
