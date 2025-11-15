@@ -9,12 +9,11 @@ Vídeo no Youtube explicando o projeto: https://youtu.be/KikydU9HogU?si=XTwK8__S
 
 1.  [**Objetivos do Projeto**](#objetivos-do-projeto)
 2.  [**Entendendo a CEAP (Cota Parlamentar)**](#-entendendo-a-ceap-cota-parlamentar)
-3.  [**Salário e Outros Benefícios**](#-salario-e-outros-benefícios)
-4.  [**Tecnologias Utilizadas**](#-tecnologias-utilizadas)
-5.  [**Estrutura do Banco de Dados**](#-estrutura-do-banco-de-dados)
-6.  [**Exemplos de Endpoints da API**](#-exemplos-de-endpoints-da-api)
-7.  [**Demonstração do Dashboard**](#-demonstração-do-dashboard)
-8.  [**Fonte dos Dados**](#-fonte-dos-dados)
+3.  [**Tecnologias Utilizadas**](#-tecnologias-utilizadas)
+4.  [**Estrutura do Banco de Dados**](#-estrutura-do-banco-de-dados)
+5.  [**Exemplos de Endpoints da API**](#-exemplos-de-endpoints-da-api)
+6.  [**Demonstração do Dashboard**](#-demonstração-do-dashboard)
+7.  [**Fonte dos Dados**](#-fonte-dos-dados)
 
 ---
 
