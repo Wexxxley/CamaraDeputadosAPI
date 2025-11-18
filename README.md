@@ -84,6 +84,9 @@ Para ilustrar o potencial da API, foi desenvolvido um frontend de exemplo que co
 ![alt text](imgs/d2.png)
 
 ---
+## 🎯 Executar o Projeto
+
+uvicorn main:app --reload
 
 ## 🌐 Fonte dos Dados
 
